@@ -63,18 +63,16 @@ import com.example.android.quakereport.data.DBHelper;
 
 public class EarthquakeActivity extends AppCompatActivity
         implements QueryUtils.VolleyReponceCalled, NavigationView.OnNavigationItemSelectedListener,
-        Preference.OnPreferenceChangeListener, EarthquakeAdapterOnClickHandler {
+        Preference.OnPreferenceChangeListener, EarthquakeRecylerAdapter.EarthquakeRecylerAdapterOnClickHandler {
     /**
      * Constant value for the earthquake loader ID. We can choose any integer.
      * This really only comes into play if you're using multiple loaders.
      */
     LocationManager locationManager;
     private static final int PERMISSION_REQUEST_CODE = 1;
-    private static final int EARTHQUAKE_LOADER_ID = 1;
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
     private static String USGS_REQUEST_URL =
-            "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=1&limit=10000";
-    private QuakeAdapter mAdapter;
+            "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=1&limit=100";
     private TextView mEmptyStateTextView;
     private NavigationView navigationView;
     public List<String> magnitude;
@@ -87,9 +85,11 @@ public class EarthquakeActivity extends AppCompatActivity
     double longitudeNetwork = 0, latitudeNetwork = 0;
     String latNet;
     String longNet;
+    int distanceTrigger = 0;
     private List<Quake> earthquakes;
     private RecyclerView mRecyclerView;
-    private EarthquakeAdapter mEarthquakeAdapter;
+    private EarthquakeRecylerAdapter mEarthquakeAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -113,40 +113,8 @@ public class EarthquakeActivity extends AppCompatActivity
                 = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         mRecyclerView.setLayoutManager(layoutManager);
         mRecyclerView.setHasFixedSize(true);
-        mEarthquakeAdapter = new EarthquakeAdapter();
+        mEarthquakeAdapter = new EarthquakeRecylerAdapter(this, this);
         mRecyclerView.setAdapter(mEarthquakeAdapter);
-        //old listView
-        final ListView earthquakeListView = (ListView) findViewById(R.id.list);
-        mAdapter = new QuakeAdapter(this, new ArrayList<Quake>());
-        earthquakeListView.setAdapter(mAdapter);
-        earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                Quake currentQuake = mAdapter.getItem(position);
-                Toast.makeText(EarthquakeActivity.this, currentQuake.getKdistance(), Toast.LENGTH_SHORT).show();
-                Intent details = new Intent(EarthquakeActivity.this, DetailsActivity.class);
-                details.putExtra("Magnitude", currentQuake.getMag());
-                details.putExtra("Date", currentQuake.getDate());
-                details.putExtra("Time", currentQuake.getTime());
-                details.putExtra("LocationOff", currentQuake.getLocationOff());
-                details.putExtra("Location", currentQuake.getLocation());
-                //double dtLongitude = currentQuake.getLongitude();
-                details.putExtra("Longitude", currentQuake.getLongitude());
-                //double dtLatitude = currentQuake.getLatitude();
-                details.putExtra("Latitude", currentQuake.getLatitude());
-                details.putExtra("Depth", currentQuake.getDepth());
-                details.putExtra("LongNet", longNet);
-                details.putExtra("LatNet", latNet);
-                String felt = currentQuake.getFelt();
-                details.putExtra("Felt", felt);
-                double calc1 = (Math.sqrt(Math.pow((currentQuake.getLongitude() - longitudeNetwork), 2) + Math.pow((currentQuake.getLatitude() - latitudeNetwork), 2))) * 110.5;
-                //double calc1 = currentQuake.getDistance();
-                details.putExtra("Distance", calc1);
-                startActivity(details);
-            }
-        });
-        mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
-        earthquakeListView.setEmptyView(mEmptyStateTextView);
 //Spinners in nav drawer
         magnitude = new ArrayList<String>();
         magnitude.add("Magnitude: 1+ ");
@@ -159,7 +127,7 @@ public class EarthquakeActivity extends AppCompatActivity
         magnitude.add("Magnitude: 8+ ");
         magnitude.add("Magnitude: 9+ ");
         Spinner magSpinner = (Spinner) navigationView.getMenu().findItem(R.id.nav_drawer_mag).getActionView();
-        magSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, magnitude));
+        magSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.spinner_item, magnitude));
         magSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -205,7 +173,7 @@ public class EarthquakeActivity extends AppCompatActivity
         sortBy.add("Sort by: Nearest");
         sortBy.add("just show location");
         Spinner sortSpinner = (Spinner) navigationView.getMenu().findItem(R.id.nav_drawer_sortby).getActionView();
-        sortSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, sortBy));
+        sortSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.spinner_item, sortBy));
         sortSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -217,7 +185,7 @@ public class EarthquakeActivity extends AppCompatActivity
                         orderBy = DBContract.EqEntry.COLUMN_DATE + " DESC";
                         break;
                     case 2:
-                        orderBy= DBContract.EqEntry.COLUMN_DISTANCE + " DESC";
+                        orderBy = DBContract.EqEntry.COLUMN_DISTANCE + " DESC";
                         break;
                     case 3:
                         calculateDistance();
@@ -225,45 +193,39 @@ public class EarthquakeActivity extends AppCompatActivity
                 }
                 displayDbQuakes();
             }
-
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
         itemsDisp = new ArrayList<String>();
-        itemsDisp.add("Items to display: 10");
         itemsDisp.add("Items to display: 20");
         itemsDisp.add("Items to display: 30");
         itemsDisp.add("Items to display: 50");
         itemsDisp.add("Items to display: 100");
-        itemsDisp.add("Items to display: 10000");
+        itemsDisp.add("Items to display: 1000");
         Spinner itemsDispSpinner = (Spinner) navigationView.getMenu().findItem(R.id.nav_drawer_itemsDisp).getActionView();
-        itemsDispSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, itemsDisp));
+        itemsDispSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.spinner_item, itemsDisp));
         itemsDispSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 switch (position) {
                     case 0:
-                        itDisp = "10";
-                        break;
-                    case 1:
                         itDisp = "20";
                         break;
-                    case 2:
+                    case 1:
                         itDisp = "30";
                         break;
-                    case 3:
+                    case 2:
                         itDisp = "50";
                         break;
-                    case 4:
+                    case 3:
                         itDisp = "100";
                         break;
-                    case 5:
-                        itDisp = "10000";
+                    case 4:
+                        itDisp = "1000";
                         break;
                 }
                 displayDbQuakes();
-                //cleanStuff();
             }
 
             @Override
@@ -271,26 +233,6 @@ public class EarthquakeActivity extends AppCompatActivity
             }
         });
         mDbHelper = new DBHelper(this);
-    }
-
-    private void displayDatabaseInfo() {
-        DBHelper mDbHelper = new DBHelper(this);
-
-        // Create and/or open a database to read from it
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
-
-        //Perform this raw SQL query "SELECT * FROM pets"
-        //to get a Cursor that contains all rows from the pets table.
-        Cursor cursor = db.rawQuery("SELECT * FROM " + DBContract.EqEntry.TABLE_NAME, null);
-        try {
-            // Display the number of rows in the Cursor (which reflects the number of rows in the
-            // pets table in the database).
-            Log.e(LOG_TAG, "Number of rows in pets database table: " + cursor.getCount());
-        } finally {
-            // Always close the cursor when you're done reading from it. This releases all its
-            // resources and makes it invalid.
-            cursor.close();
-        }
     }
 
     @Override
@@ -301,13 +243,6 @@ public class EarthquakeActivity extends AppCompatActivity
         } else {
             super.onBackPressed();
         }
-    }
-
-    @Override
-    public void onClick(String weatherForDay) {
-        Context context = this;
-        Toast.makeText(context, weatherForDay, Toast.LENGTH_SHORT)
-                .show();
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -353,45 +288,6 @@ public class EarthquakeActivity extends AppCompatActivity
         return true;
     }
 
-//    @Override
-//    public Loader<List<Quake>> onCreateLoader(int i, Bundle bundle) {
-//        Uri baseUri = Uri.parse(USGS_REQUEST_URL);
-//        Uri.Builder uriBuilder = baseUri.buildUpon();
-//
-//        uriBuilder.appendQueryParameter("format", "geojson");
-//        uriBuilder.appendQueryParameter("limit", itDisp);
-//        uriBuilder.appendQueryParameter("minmag", minMagnitude);
-//        uriBuilder.appendQueryParameter("orderby", orderBy);
-//
-//        return new EarthquakeLoader(this, uriBuilder.toString());
-//    }
-    // Create a new loader for the given URL
-    //return new EarthquakeLoader(this, USGS_REQUEST_URL);
-
-    //    @Override
-//    public void onLoadFinished(Loader<List<Quake>> loader, List<Quake> earthquakes) {
-//        ProgressBar spinner = (ProgressBar) findViewById(R.id.loading_spinner);
-//        spinner.setVisibility(View.GONE);
-//        if (isNetworkAvailable() != true){
-//            mEmptyStateTextView.setText(R.string.no_connection);
-//        } else {
-//        // Set empty state text to display "No earthquakes found."
-//        mEmptyStateTextView.setText(R.string.no_earthquakes);
-//        }
-//        // Clear the adapter of previous earthquake data
-//        mAdapter.clear();
-//
-//        // If there is a valid list of {@link Earthquake}s, then add them to the adapter's
-//        // data set. This will trigger the ListView to update.
-//        if (earthquakes != null && !earthquakes.isEmpty()) {
-//            mAdapter.addAll(earthquakes);
-//        }
-//    }
-//    @Override
-//    public void onLoaderReset(Loader<List<Quake>> loader) {
-//        // Loader reset, so we can clear out our existing data.
-//        mAdapter.clear();
-//    }
     private boolean isNetworkAvailable() {
         ConnectivityManager connectivityManager
                 = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -415,10 +311,6 @@ public class EarthquakeActivity extends AppCompatActivity
         return true;
     }
 
-    //    public void cleanStuff(){
-//        Log.e(LOG_TAG, "it should work");
-//        getLoaderManager().restartLoader(EARTHQUAKE_LOADER_ID, null, this);
-//    }
     private boolean checkLocation() {
         if (!isLocationEnabled())
             showAlert();
@@ -463,7 +355,8 @@ public class EarthquakeActivity extends AppCompatActivity
         public void onLocationChanged(Location location) {
             longitudeNetwork = location.getLongitude();
             latitudeNetwork = location.getLatitude();
-            //calculateDistance();
+            if(distanceTrigger == 1){
+            calculateDistance();}
         }
 
         @Override
@@ -513,21 +406,35 @@ public class EarthquakeActivity extends AppCompatActivity
         return result == PackageManager.PERMISSION_GRANTED;
     }
 
-    private void makeMagic() {
-        DecimalFormat formatter = new DecimalFormat("0.00");
-        longNet = formatter.format(longitudeNetwork);
-        latNet = formatter.format(latitudeNetwork);
-        Toast.makeText(EarthquakeActivity.this, longNet + " " + latNet, Toast.LENGTH_SHORT).show();
+    @Override
+    public void onClick(int position) {
+                        Quake currentQuake = earthquakes.get(position);
+                Toast.makeText(EarthquakeActivity.this, currentQuake.getMag(), Toast.LENGTH_SHORT).show();
+                Intent details = new Intent(EarthquakeActivity.this, DetailsActivity.class);
+                details.putExtra("Magnitude", currentQuake.getMag());
+                details.putExtra("Date", currentQuake.getDate());
+                details.putExtra("Time", currentQuake.getTime());
+                details.putExtra("LocationOff", currentQuake.getLocationOff());
+                details.putExtra("Location", currentQuake.getLocation());
+                details.putExtra("Longitude", currentQuake.getLongitude());
+                details.putExtra("Latitude", currentQuake.getLatitude());
+                details.putExtra("Depth", currentQuake.getDepth());
+                details.putExtra("LongNet", longNet);
+                details.putExtra("LatNet", latNet);
+                String felt = currentQuake.getFelt();
+                details.putExtra("Felt", felt);
+                double calc1 = (Math.sqrt(Math.pow((currentQuake.getLongitude() - longitudeNetwork), 2) + Math.pow((currentQuake.getLatitude() - latitudeNetwork), 2))) * 110.5;
+                details.putExtra("Distance", calc1);
+                startActivity(details);
     }
-
     @Override
     public void onVolleyReponceCalled(List<Quake> mDataSet) {
-        mAdapter.clear();
         if (mDataSet != null && !mDataSet.isEmpty()) {
-            mAdapter.addAll(mDataSet);
+           mEarthquakeAdapter.swapCursor(mDataSet);
+            distanceTrigger = 1;
         }
-        ProgressBar spinner = (ProgressBar) findViewById(R.id.loading_spinner);
-        spinner.setVisibility(View.GONE);
+//        ProgressBar spinner = (ProgressBar) findViewById(R.id.loading_spinner);
+//        spinner.setVisibility(View.GONE);
     }
 
     public void displayDbQuakes() {
@@ -579,26 +486,10 @@ public class EarthquakeActivity extends AppCompatActivity
 
         // Iterate through all the returned rows in the cursor
         while (cursor.moveToNext()) {
-            // Use that index to extract the String or Int value of the word
-            // at the current row the cursor is on.
-            int currentID = cursor.getInt(idColumnIndex);
-            Double currentMag = cursor.getDouble(magColumnIndex);
-            String currentLocation = cursor.getString(locationColumnIndex);
-            String currentDate = cursor.getString(dateColumnIndex);
-            String currentURL = cursor.getString(urlColumnIndex);
-            int currentFelt = cursor.getInt(feltColumnIndex);
-            Double currentLongitude = cursor.getDouble(longitudeColumnIndex);
-            Double currentLatitude = cursor.getDouble(latitudeColumnIndex);
-            int currentDepth = cursor.getInt(depthColumnIndex);
-            int currentDistance = cursor.getInt(distanceColumnIndex);
-            // Display the values from each column of the current row in the cursor in the TextView
-            earthquakes.add(new Quake(currentMag, currentLocation, currentDate, currentURL, currentFelt, currentLongitude, currentLatitude, currentDepth, currentDistance));
+            earthquakes.add(new Quake(cursor.getDouble(magColumnIndex), cursor.getString(locationColumnIndex), cursor.getString(dateColumnIndex), cursor.getString(urlColumnIndex), cursor.getInt(feltColumnIndex), cursor.getDouble(longitudeColumnIndex), cursor.getDouble(latitudeColumnIndex), cursor.getInt(depthColumnIndex), cursor.getInt(distanceColumnIndex)));
         }
     } finally    {
-        mAdapter.clear();
-        mAdapter.addAll(earthquakes);
-        // Always close the cursor when you're done reading from it. This releases all its
-        // resources and makes it invalid.
+        mEarthquakeAdapter.swapCursor(earthquakes);
         cursor.close();
     }
 }

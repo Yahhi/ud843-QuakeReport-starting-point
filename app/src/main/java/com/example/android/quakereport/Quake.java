@@ -1,5 +1,8 @@
 package com.example.android.quakereport;
 
+import android.support.v4.content.ContextCompat;
+import android.view.View;
+
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
@@ -19,6 +22,14 @@ public class Quake {
     private int kdepth;
     private int kfelt;
     public double kdistance;
+
+//    public Quake(double kmag, String klocation, String kdate) {
+//        this.kmag = kmag;
+//        this.klocation = klocation;
+//        this.kdate = kdate;
+//
+//    }
+
     private static final String LOCATION_SEPARATOR = " of ";
     public Quake(double mag, String location, String date, String url, int felt, double longitude, double latitude, int depth, double distance){
         kmag = mag;
@@ -87,6 +98,48 @@ public class Quake {
         String kdist = formatter.format(kdistance);
         return kdist;
     }
+//    public int getColor(double kmag){
+//        int color = QuakeAdapter.getMagnitudeColor(kmag);
+//        return color;
+//    }
+//    public int getMagnitudeColor(double mag){
+//        int magnitudeColorResourceId;
+//        int magnitudeFloor = (int) Math.floor(mag);
+//        switch (magnitudeFloor) {
+//            case 0:
+//            case 1:
+//                magnitudeColorResourceId = R.color.magnitude1;
+//                break;
+//            case 2:
+//                magnitudeColorResourceId = R.color.magnitude2;
+//                break;
+//            case 3:
+//                magnitudeColorResourceId = R.color.magnitude3;
+//                break;
+//            case 4:
+//                magnitudeColorResourceId = R.color.magnitude4;
+//                break;
+//            case 5:
+//                magnitudeColorResourceId = R.color.magnitude5;
+//                break;
+//            case 6:
+//                magnitudeColorResourceId = R.color.magnitude6;
+//                break;
+//            case 7:
+//                magnitudeColorResourceId = R.color.magnitude7;
+//                break;
+//            case 8:
+//                magnitudeColorResourceId = R.color.magnitude8;
+//                break;
+//            case 9:
+//                magnitudeColorResourceId = R.color.magnitude9;
+//                break;
+//            default:
+//                magnitudeColorResourceId = R.color.magnitude10plus;
+//                break;
+//        }
+//        return ContextCompat.getColor(getContext(), magnitudeColorResourceId);
+//    }
     //returning initial values for object reconstruction
     public double getOrigMag(){
         return kmag;

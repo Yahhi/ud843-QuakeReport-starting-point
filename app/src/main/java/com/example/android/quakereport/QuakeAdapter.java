@@ -48,9 +48,10 @@ super(context, 0, earthquakes);
         String dateToDisplay = currentQuake.getDate();
         String timeToDisplay = currentQuake.getTime();
         //setting views
-        TextView primaryLocationView = (TextView) listItemView.findViewById(R.id.primary_location);
+        //this one got about 10 views to work with while recycler view deals only with one
+        TextView primaryLocationView = null;
         primaryLocationView.setText(primaryLocation);
-        TextView locationOffsetView = (TextView) listItemView.findViewById(R.id.location_offset);
+        TextView locationOffsetView = null;
         locationOffsetView.setText(locationOffset);
         TextView date = (TextView) listItemView.findViewById(R.id.date);
         date.setText(dateToDisplay);
@@ -58,7 +59,9 @@ super(context, 0, earthquakes);
         time.setText(timeToDisplay);
         return listItemView;
     }
-    private int getMagnitudeColor(double mag){
+    ///old adapter, just white
+
+    public int getMagnitudeColor(double mag){
         int magnitudeColorResourceId;
         int magnitudeFloor = (int) Math.floor(mag);
         switch (magnitudeFloor) {

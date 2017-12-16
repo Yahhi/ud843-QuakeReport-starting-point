@@ -72,10 +72,7 @@ public class QueryUtils {
                                 felt = properties.getInt("felt");
                             }
                             JSONArray coordinates = currentEarthquake.getJSONObject("geometry").getJSONArray("coordinates");
-                            //new DBHelper(QueryUtils.this.context).insertContact(properties.getInt("mag"), properties.getString("place"), properties.getString("time"), properties.getString("url"), felt, coordinates.getInt(0), coordinates.getInt(1), coordinates.getInt(2), distance);
-
-
-// Create a new map of values, where column names are the keys
+                            // Create a new map of values, where column names are the keys
                             ContentValues values = new ContentValues();
                             values.put(DBContract.EqEntry.COLUMN_MAG, properties.getDouble("mag"));
                             values.put(DBContract.EqEntry.COLUMN_LOCATION, properties.getString("place"));
@@ -89,27 +86,21 @@ public class QueryUtils {
 // Insert the new row, returning the primary key value of the new row
                             long newRowId = db.insert(DBContract.EqEntry.TABLE_NAME, null, values);
                             earthquakes.add(new Quake(properties.getDouble("mag"), properties.getString("place"), properties.getString("time"), properties.getString("url"), felt, coordinates.getDouble(0), coordinates.getDouble(1), coordinates.getInt(2), distance));
-
                         }
+                        
                         volleyReponceCalled.onVolleyReponceCalled(earthquakes);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-
-
                 }
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
-
                     Log.d(LOG_TAG, "onErrorResponse " + error.getMessage());
-
                 }
             });
             requestQueue.add(jsonObjectRequest);
-
         } catch (Exception e) {
-
         }
     }
 }

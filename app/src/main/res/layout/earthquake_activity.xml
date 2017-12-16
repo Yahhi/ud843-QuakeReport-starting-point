@@ -43,12 +43,12 @@
         android:layout_centerInParent="true"
         android:textAppearance="?android:textAppearanceMedium"/>
     <!-- Not fidget, but spinner -->
-    <ProgressBar
-        android:id="@+id/loading_spinner"
-        style="@style/Widget.AppCompat.ProgressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        />
+    <!--<ProgressBar-->
+        <!--android:id="@+id/loading_spinner"-->
+        <!--style="@style/Widget.AppCompat.ProgressBar"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_centerInParent="true"-->
+        <!--/>-->
 </RelativeLayout>
 </android.support.constraint.ConstraintLayout>
