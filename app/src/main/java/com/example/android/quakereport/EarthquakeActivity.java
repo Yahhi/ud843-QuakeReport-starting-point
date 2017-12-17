@@ -115,6 +115,7 @@ public class EarthquakeActivity extends AppCompatActivity
         mRecyclerView.setHasFixedSize(true);
         mEarthquakeAdapter = new EarthquakeRecylerAdapter(this, this);
         mRecyclerView.setAdapter(mEarthquakeAdapter);
+
 //Spinners in nav drawer
         magnitude = new ArrayList<String>();
         magnitude.add("Magnitude: 1+ ");
@@ -126,7 +127,7 @@ public class EarthquakeActivity extends AppCompatActivity
         magnitude.add("Magnitude: 7+ ");
         magnitude.add("Magnitude: 8+ ");
         magnitude.add("Magnitude: 9+ ");
-        Spinner magSpinner = (Spinner) navigationView.getMenu().findItem(R.id.nav_drawer_mag).getActionView();
+        Spinner magSpinner = (Spinner) navigationView.getHeaderView(0).findViewById(R.id.settings_magnitude_selection);
         magSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.spinner_item, magnitude));
         magSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -172,7 +173,7 @@ public class EarthquakeActivity extends AppCompatActivity
         sortBy.add("Sort by: Most Recent");
         sortBy.add("Sort by: Nearest");
         sortBy.add("just show location");
-        Spinner sortSpinner = (Spinner) navigationView.getMenu().findItem(R.id.nav_drawer_sortby).getActionView();
+        Spinner sortSpinner = (Spinner) navigationView.getHeaderView(0).findViewById(R.id.settings_sort_selection);
         sortSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.spinner_item, sortBy));
         sortSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -203,7 +204,7 @@ public class EarthquakeActivity extends AppCompatActivity
         itemsDisp.add("Items to display: 50");
         itemsDisp.add("Items to display: 100");
         itemsDisp.add("Items to display: 1000");
-        Spinner itemsDispSpinner = (Spinner) navigationView.getMenu().findItem(R.id.nav_drawer_itemsDisp).getActionView();
+        Spinner itemsDispSpinner = (Spinner) navigationView.getHeaderView(0).findViewById(R.id.settings_items_count_selection);
         itemsDispSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.spinner_item, itemsDisp));
         itemsDispSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -272,13 +273,7 @@ public class EarthquakeActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_drawer_mag) {
-
-        } else if (id == R.id.nav_drawer_sortby) {
-
-        } else if (id == R.id.nav_drawer_itemsDisp) {
-
-        } else if (id == R.id.nav_drawer_aboutApp) {
+        if (id == R.id.nav_drawer_aboutApp) {
             Intent aboutApp = new Intent(this, AboutAppActivity.class);
             startActivity(aboutApp);
         }
